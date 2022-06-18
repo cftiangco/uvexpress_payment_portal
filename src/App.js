@@ -1,13 +1,18 @@
-import React,{useState} from "react";
+import React, { useState } from "react";
 import { Login } from './screens/Login'
 import { Pricing } from './screens/Pricing'
-import {Loading } from './components/Loading'
+import { Paypal } from './components/Paypal'
+import { Loading } from './components/Loading'
+import axios from 'axios';
 
 function App() {
 
-  const [login, setLogin] = useState();
   const [activeIndex, setActiveIndex] = useState(0);
   const [loader, setLoader] = useState(false);
+  const [page, setPage] = useState("Login");
+  const [price, setPrice] = useState(0);
+
+  const API_URL = process.env.REACT_APP_API_URL;
 
   const priceList = [
     { id: 1, description: 'P50.00', price: 50 },
@@ -23,10 +28,21 @@ function App() {
   const handleLogin = (username, password) => {
     console.log(username, password);
     setLoader(true);
-    setTimeout(() => {
-      setLogin(true);
-      setLoader(false);
-    }, 2000)
+
+      axios.post(`${API_URL}login`, {
+        username: username,
+        password: password,
+      })
+      .then(function (response) {
+        console.log(response.data);
+        setPage("Pricing");
+        setLoader(false);
+      })
+      .catch(function (error) {
+        console.log(error.response.data);
+        setLoader(false);
+      });
+  
   }
 
   const handleOnClickPrice = (index) => {
@@ -38,9 +54,9 @@ function App() {
   const handleOnClickTopup = () => {
 
     if (activeIndex > 0) {
-      const price = priceList[activeIndex - 1];
-      console.log(price);
-      setLoader(true);
+      const result = priceList[activeIndex - 1];
+      setPrice(result.price);
+      setPage("Checkout");
     }
 
   }
@@ -52,17 +68,24 @@ function App() {
 
       {loader ? <Loading label="Please wait..." /> : null}
 
-      {login ?
+      {page === "Login" && (
+        <Login
+          onLogin={handleLogin}
+        />
+      )}
+
+      {page === "Pricing" && (
         <Pricing
           priceList={priceList}
           onClick={handleOnClickPrice}
           activeIndex={activeIndex}
           onClickTopup={handleOnClickTopup}
-        /> :
-        <Login
-          onLogin={handleLogin}
         />
-      }
+      )}
+
+      {page === "Checkout" && (
+        <Paypal amount={price} />
+      )}
 
     </div>
   );
